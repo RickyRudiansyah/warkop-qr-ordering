@@ -1,0 +1,80 @@
+export interface Category {
+  id: string
+  name: string
+  sort_order: number
+}
+
+export interface MenuVariation {
+  id: string
+  menu_item_id: string
+  type: string // 'size' | 'spice' | 'topping'
+  name: string
+  price_modifier: number
+}
+
+export interface MenuItem {
+  id: string
+  name: string
+  description: string
+  price: number
+  image_url: string
+  category_id: string
+  categories?: { name: string }
+  is_available: boolean
+  is_sold_out: boolean
+  sort_order: number
+  menu_variations?: MenuVariation[]
+}
+
+export interface CartItem {
+  menu_item_id: string
+  menu_item_name: string
+  menu_item_price: number
+  quantity: number
+  variations: { type: string; name: string; price_modifier: number }[]
+  subtotal: number
+  notes?: string
+}
+
+export type PaymentMethod = 'CASH' | 'QRIS' | 'TRANSFER_BCA'
+export type OrderStatus = 'PENDING_CASH' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'PROCESSING' | 'SERVED' | 'CANCELLED'
+
+export interface OrderItem {
+  id: string
+  order_id: string
+  menu_item_name: string
+  menu_item_price: number
+  quantity: number
+  variations: { type: string; name: string; price_modifier: number }[]
+  subtotal: number
+  notes?: string
+}
+
+export interface Order {
+  id: string
+  table_id: string
+  status: OrderStatus
+  payment_method: PaymentMethod
+  total_amount: number
+  notes?: string
+  created_at: string
+  confirmed_at?: string
+  tables?: { table_number: number; label: string }
+  order_items?: OrderItem[]
+}
+
+export interface Table {
+  id: string
+  table_number: number
+  label: string
+  is_active: boolean
+}
+
+export type UserRole = 'cashier' | 'koki' | 'owner'
+
+export interface AuthUser {
+  id: string
+  name: string
+  role: UserRole
+  token: string
+}

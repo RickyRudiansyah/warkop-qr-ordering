@@ -3,42 +3,33 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Spinner } from '@/components/ui'
-import { UtensilsCrossed, User, Lock } from 'lucide-react'
+import { UtensilsCrossed, Mail, Lock } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, loading } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    try {
+      await login(email, password)
 
-    // Mock login — replace with real API call
-    setTimeout(() => {
-      if (username && password) {
-        const mockUser = {
-          id: '1',
-          name: username,
-          role: username.includes('owner') ? 'owner' as const :
-                username.includes('koki') ? 'koki' as const :
-                'cashier' as const,
-          token: 'mock_token',
-        }
-        login(mockUser)
-        const redirect = mockUser.role === 'koki' ? '/dashboard/kitchen' :
-                        mockUser.role === 'owner' ? '/dashboard/owner' :
-                        '/dashboard/cashier'
-        navigate(redirect)
-        toast.success(`Selamat datang, ${mockUser.name}!`)
-      } else {
-        toast.error('Username atau password salah')
-      }
-      setLoading(false)
-    }, 800)
+      // Ambil user dari localStorage setelah login (sudah di-set di AuthContext)
+      const stored = localStorage.getItem('auth_user')
+      const user = stored ? JSON.parse(stored) : null
+      const redirect =
+        user?.role === 'koki' ? '/dashboard/kitchen' :
+        user?.role === 'owner' ? '/dashboard/owner' :
+        '/dashboard/cashier'
+
+      toast.success(`Selamat datang! 👋`)
+      navigate(redirect)
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Login gagal')
+    }
   }
 
   return (
@@ -68,14 +59,14 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold mb-2">Username</label>
+            <label className="block text-sm font-semibold mb-2">Email</label>
             <div className="relative">
-              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
+              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
               <input
-                type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="Masukkan username"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="email@warkop.com"
                 className="w-full bg-[var(--color-surface-3)] border border-[var(--color-border)] rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[var(--color-primary)]"
                 required
               />
@@ -102,10 +93,10 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        {/* Demo hint */}
+        {/* Hint */}
         <div className="mt-6 p-3 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20">
           <p className="text-xs text-[var(--color-text-muted)] text-center">
-            💡 Demo: username "owner", "cashier", atau "koki" dengan password apa saja
+            🔐 Login menggunakan email & password staff
           </p>
         </div>
       </div>

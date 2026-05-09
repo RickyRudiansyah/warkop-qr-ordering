@@ -19,7 +19,7 @@ export interface MenuItem {
   price: number
   image_url: string | null
   category_id: string
-  categories?: { name: string }
+  categories?: { id: string; name: string }
   is_available: boolean
   is_sold_out: boolean
   sort_order: number

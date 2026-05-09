@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '@/lib/api'
 import { supabase } from '@/lib/supabase'
-import type { Order } from '@/types'
+import type { Order, OrderStatus } from '@/types'
 
 export function useOrders() {
   const [orders, setOrders] = useState<Order[]>([])
@@ -23,7 +23,9 @@ export function useOrders() {
       })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [fetchOrders])
 
   const confirmCash = async (orderId: string) => {
@@ -31,13 +33,15 @@ export function useOrders() {
     fetchOrders()
   }
 
-  const updateStatus = async (orderId: string, status: string) => {
+  const updateStatus = async (orderId: string, status: Extract<OrderStatus, 'PROCESSING' | 'SERVED'>) => {
     await api.patch(`/orders/${orderId}/status`, null, { params: { status } })
     fetchOrders()
   }
 
-  const cancelOrder = async (orderId: string) => {
-    await api.patch(`/orders/${orderId}/status`, null, { params: { status: 'CANCELLED' } })
+  const cancelOrder = async (orderId: string, reason = 'Dibatalkan cashier') => {
+    await api.patch(`/orders/${orderId}/cancel`, null, {
+      params: { reason, actor_email: 'cashier@local' },
+    })
     fetchOrders()
   }
 

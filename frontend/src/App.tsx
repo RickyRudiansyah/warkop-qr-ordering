@@ -11,6 +11,7 @@ import CashierDashboard from '@/pages/CashierDashboard'
 import KitchenDisplay from '@/pages/KitchenDisplay'
 import OwnerDashboard from '@/pages/OwnerDashboard'
 import ManualOrderPage from '@/pages/ManualOrderPage'
+import QRGeneratorPage from '@/pages/QRGeneratorPage'
 
 export default function App() {
   return (
@@ -36,6 +37,9 @@ export default function App() {
             } />
             <Route path="/dashboard/owner" element={
               <ProtectedRoute roles={['owner']}><OwnerDashboard /></ProtectedRoute>
+            } />
+            <Route path="/dashboard/qr" element={
+              <ProtectedRoute roles={['cashier', 'owner']}><QRGeneratorPage /></ProtectedRoute>
             } />
 
             <Route path="*" element={<Navigate to="/order?table=1" replace />} />

@@ -68,7 +68,7 @@ function KitchenTicket({ order, onProcess, onServe }: {
             <div>
               <p className="font-semibold">{item.menu_item_name}</p>
               {item.variations?.length > 0 && (
-                <p className="text-xs text-[var(--color-text-muted)]">{item.variations.map(v => v.name).join(', ')}</p>
+                <p className="text-xs text-[var(--color-text-muted)]">{item.variations.map(v => v.label).join(', ')}</p>
               )}
               {item.notes && <p className="text-xs text-yellow-400 italic">📝 {item.notes}</p>}
             </div>

@@ -12,20 +12,20 @@ export function MenuItemSheet({ item, onClose }: { item: MenuItem; onClose: () =
   const [selectedVariations, setSelectedVariations] = useState<MenuVariation[]>([])
   const [notes, setNotes] = useState('')
 
-  // Group variations by type
+  // Group by variation_type (bukan type)
   const variationGroups = (item.menu_variations || []).reduce<Record<string, MenuVariation[]>>((acc, v) => {
-    if (!acc[v.type]) acc[v.type] = []
-    acc[v.type].push(v)
+    if (!acc[v.variation_type]) acc[v.variation_type] = []
+    acc[v.variation_type].push(v)
     return acc
   }, {})
 
-  const extraCost = selectedVariations.reduce((s, v) => s + v.price_modifier, 0)
+  const extraCost = selectedVariations.reduce((s, v) => s + v.extra_price, 0)
   const unitPrice = item.price + extraCost
   const subtotal = unitPrice * qty
 
   const toggleVariation = (v: MenuVariation, isRadio: boolean) => {
     if (isRadio) {
-      setSelectedVariations(prev => [...prev.filter(sv => sv.type !== v.type), v])
+      setSelectedVariations(prev => [...prev.filter(sv => sv.variation_type !== v.variation_type), v])
     } else {
       setSelectedVariations(prev =>
         prev.find(sv => sv.id === v.id) ? prev.filter(sv => sv.id !== v.id) : [...prev, v]
@@ -39,7 +39,11 @@ export function MenuItemSheet({ item, onClose }: { item: MenuItem; onClose: () =
       menu_item_name: item.name,
       menu_item_price: item.price,
       quantity: qty,
-      variations: selectedVariations.map(v => ({ type: v.type, name: v.name, price_modifier: v.price_modifier })),
+      variations: selectedVariations.map(v => ({
+        label: v.label,
+        extra_price: v.extra_price,
+        variation_type: v.variation_type,
+      })),
       subtotal,
       notes: notes || undefined,
     })
@@ -47,16 +51,22 @@ export function MenuItemSheet({ item, onClose }: { item: MenuItem; onClose: () =
     onClose()
   }
 
-  // Prevent body scroll
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [])
 
+  const typeLabel: Record<string, string> = {
+    size: 'Ukuran',
+    spicy_level: 'Level Pedas',
+    topping: 'Topping',
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-[var(--color-surface-2)] rounded-t-3xl max-h-[90dvh] flex flex-col overflow-hidden">
+
         {/* Image */}
         <div className="relative h-52 bg-[var(--color-surface-3)] shrink-0">
           {item.image_url ? (
@@ -64,7 +74,10 @@ export function MenuItemSheet({ item, onClose }: { item: MenuItem; onClose: () =
           ) : (
             <div className="w-full h-full flex items-center justify-center text-6xl">🍜</div>
           )}
-          <button onClick={onClose} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/50 flex items-center justify-center text-white">
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/50 flex items-center justify-center text-white"
+          >
             <X size={18} />
           </button>
         </div>
@@ -73,20 +86,21 @@ export function MenuItemSheet({ item, onClose }: { item: MenuItem; onClose: () =
         <div className="overflow-y-auto flex-1 p-5 space-y-5">
           <div>
             <h2 className="text-xl font-bold">{item.name}</h2>
-            {item.description && <p className="text-[var(--color-text-muted)] text-sm mt-1">{item.description}</p>}
+            {item.description && (
+              <p className="text-[var(--color-text-muted)] text-sm mt-1">{item.description}</p>
+            )}
             <p className="text-[var(--color-accent)] font-bold text-lg mt-2">{formatRupiah(item.price)}</p>
           </div>
 
-          {/* Variations */}
+          {/* Variation Groups */}
           {Object.entries(variationGroups).map(([type, variations]) => {
-            const isRadio = type === 'size' || type === 'spice'
-            const typeLabel: Record<string, string> = { size: 'Ukuran', spice: 'Level Pedas', topping: 'Topping' }
+            const isRadio = type === 'size' || type === 'spicy_level'
             return (
               <div key={type}>
                 <p className="font-semibold text-sm mb-2">{typeLabel[type] || type}</p>
                 <div className="flex flex-wrap gap-2">
                   {variations.map(v => {
-                    const selected = selectedVariations.find(sv => sv.id === v.id)
+                    const selected = !!selectedVariations.find(sv => sv.id === v.id)
                     return (
                       <button
                         key={v.id}
@@ -97,7 +111,7 @@ export function MenuItemSheet({ item, onClose }: { item: MenuItem; onClose: () =
                             : 'border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-primary)]'
                         }`}
                       >
-                        {v.name}{v.price_modifier > 0 ? ` +${formatRupiah(v.price_modifier)}` : ''}
+                        {v.label}{v.extra_price > 0 ? ` +${formatRupiah(v.extra_price)}` : ''}
                       </button>
                     )
                   })}
@@ -122,11 +136,17 @@ export function MenuItemSheet({ item, onClose }: { item: MenuItem; onClose: () =
         <div className="p-5 border-t border-[var(--color-border)] shrink-0">
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-3 bg-[var(--color-surface-3)] rounded-full px-2 py-1">
-              <button onClick={() => setQty(q => Math.max(1, q - 1))} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-2)]">
+              <button
+                onClick={() => setQty(q => Math.max(1, q - 1))}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-2)]"
+              >
                 <Minus size={16} />
               </button>
               <span className="font-bold w-6 text-center">{qty}</span>
-              <button onClick={() => setQty(q => q + 1)} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-2)]">
+              <button
+                onClick={() => setQty(q => q + 1)}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[var(--color-surface-2)]"
+              >
                 <Plus size={16} />
               </button>
             </div>

@@ -1,13 +1,14 @@
 import { ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/context/AuthContext'
-import { LayoutDashboard, ChefHat, UtensilsCrossed, LogOut, PlusCircle, BookOpen } from 'lucide-react'
+import { LayoutDashboard, ChefHat, UtensilsCrossed, LogOut, PlusCircle, BookOpen, QrCode } from 'lucide-react'
 
 const navItems = [
   { path: '/dashboard/cashier', label: 'Kasir', icon: <LayoutDashboard size={20} />, roles: ['cashier', 'owner'] },
   { path: '/dashboard/kitchen', label: 'Dapur', icon: <ChefHat size={20} />, roles: ['koki', 'cashier', 'owner'] },
   { path: '/dashboard/owner', label: 'Menu', icon: <BookOpen size={20} />, roles: ['owner'] },
   { path: '/dashboard/cashier/new-order', label: 'Order Manual', icon: <PlusCircle size={20} />, roles: ['cashier', 'owner'] },
+  { path: '/dashboard/qr', label: 'QR Code', icon: <QrCode size={20} />, roles: ['cashier', 'owner'] },
 ]
 
 export function DashboardLayout({ children, title }: { children: ReactNode; title: string }) {

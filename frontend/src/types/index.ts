@@ -7,9 +7,9 @@ export interface Category {
 export interface MenuVariation {
   id: string
   menu_item_id: string
-  type: string // 'size' | 'spice' | 'topping'
-  name: string
-  price_modifier: number
+  variation_type: string // 'size' | 'spicy_level' | 'topping'
+  label: string
+  extra_price: number
 }
 
 export interface MenuItem {
@@ -17,7 +17,7 @@ export interface MenuItem {
   name: string
   description: string
   price: number
-  image_url: string
+  image_url: string | null
   category_id: string
   categories?: { name: string }
   is_available: boolean
@@ -26,18 +26,30 @@ export interface MenuItem {
   menu_variations?: MenuVariation[]
 }
 
+export interface CartVariation {
+  label: string
+  extra_price: number
+  variation_type?: string
+}
+
 export interface CartItem {
   menu_item_id: string
   menu_item_name: string
   menu_item_price: number
   quantity: number
-  variations: { type: string; name: string; price_modifier: number }[]
+  variations: CartVariation[]
   subtotal: number
   notes?: string
 }
 
 export type PaymentMethod = 'CASH' | 'QRIS' | 'TRANSFER_BCA'
-export type OrderStatus = 'PENDING_CASH' | 'PENDING_PAYMENT' | 'CONFIRMED' | 'PROCESSING' | 'SERVED' | 'CANCELLED'
+export type OrderStatus =
+  | 'PENDING_CASH'
+  | 'PENDING_PAYMENT'
+  | 'CONFIRMED'
+  | 'PROCESSING'
+  | 'SERVED'
+  | 'CANCELLED'
 
 export interface OrderItem {
   id: string
@@ -45,7 +57,7 @@ export interface OrderItem {
   menu_item_name: string
   menu_item_price: number
   quantity: number
-  variations: { type: string; name: string; price_modifier: number }[]
+  variations: CartVariation[]
   subtotal: number
   notes?: string
 }

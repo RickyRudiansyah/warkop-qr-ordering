@@ -1,280 +1,260 @@
-# Warkop QR Ordering System
+# 🍜 Warkop QR Ordering System
 
-Complete QR-based ordering system for warkop/tempat nongkrong — customer self-order + staff dashboards.
+> Sistem pemesanan digital berbasis QR Code untuk warung/kafe — customer scan, pesan, bayar tanpa antri ke kasir.
 
-## 🎯 Overview
+![Tech Stack](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=flat-square&logo=react)
+![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi)
+![Database](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square&logo=supabase)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)
 
-This system replaces traditional cashier-based ordering with a QR code flow:
-1. Customer scans QR at table → opens menu in browser
-2. Customer browses, adds to cart, selects payment method
-3. Order auto-prints to kitchen (thermal printer)
-4. Staff manages orders via dashboards (cashier, kitchen, owner)
+---
 
-**Target market**: Anak sekolah, remaja, umum — vibrant, youthful design.
+## ✨ Fitur Utama
 
-## 🏗️ Architecture
+### 👥 Customer
+- Scan QR Code di meja → langsung buka menu
+- Browse menu per kategori + search
+- Pilih variasi (ukuran, level pedas, topping)
+- Tambah catatan per item
+- Checkout dengan pilihan pembayaran: **Cash**, **QRIS**, **Transfer BCA**
+- Konfirmasi pesanan dengan nomor order
+
+### 👨‍💼 Kasir
+- Dashboard Kanban — lihat semua order aktif real-time
+- Konfirmasi pembayaran cash
+- Update status order: Dikonfirmasi → Diproses → Selesai
+- Cancel order dengan alasan
+- Generator QR Code per meja (download PNG / print)
+
+### 👨‍🍳 Dapur (Kitchen Display)
+- Tampilan ticket pesanan real-time
+- Timer warna per order (kuning > 15 mnt, merah > 25 mnt)
+- Tombol **Mulai Proses** dan **Sudah Diantar**
+- Animasi ticket masuk/keluar (framer-motion)
+
+### 👑 Owner
+- Manajemen menu (tambah, edit, toggle sold out)
+- Statistik menu (total, tersedia, habis)
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Teknologi |
+|---|---|
+| Frontend | React 18, Vite, TypeScript, Tailwind CSS |
+| Backend | FastAPI, Python 3.11 |
+| Database | Supabase (PostgreSQL + Realtime) |
+| Auth | Mock Auth (JWT-ready) |
+| Animation | Framer Motion |
+| QR Code | qrcode.react |
+| Deployment | Vercel (frontend), Railway (backend) |
+
+---
+
+## 📁 Struktur Project
 
 ```
-┌─────────────┐      ┌──────────────┐      ┌──────────────┐
-│   Customer  │─────▶│   Frontend   │─────▶│   Backend    │
-│  (Mobile)   │      │ React + Vite │      │   FastAPI    │
-└─────────────┘      └──────────────┘      └──────────────┘
-                            │                      │
-                            │                      │
-                            ▼                      ▼
-                     ┌──────────────┐      ┌──────────────┐
-                     │   Supabase   │◀─────│  PostgreSQL  │
-                     │  (Realtime)  │      │  (Database)  │
-                     └──────────────┘      └──────────────┘
+warkop-qr-ordering/
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── auth/          # ProtectedRoute
+│   │   │   ├── dashboard/     # DashboardLayout, OrderCard
+│   │   │   ├── menu/          # MenuItemCard, MenuItemSheet, CategoryPills
+│   │   │   └── ui/            # Button, Badge, Spinner, EmptyState
+│   │   ├── context/
+│   │   │   ├── AuthContext.tsx
+│   │   │   └── CartContext.tsx
+│   │   ├── hooks/
+│   │   │   ├── useMenu.ts
+│   │   │   └── useOrders.ts
+│   │   ├── pages/
+│   │   │   ├── MenuPage.tsx
+│   │   │   ├── CheckoutPage.tsx
+│   │   │   ├── LoginPage.tsx
+│   │   │   ├── CashierDashboard.tsx
+│   │   │   ├── KitchenDisplay.tsx
+│   │   │   ├── OwnerDashboard.tsx
+│   │   │   └── QRGeneratorPage.tsx
+│   │   ├── types/index.ts
+│   │   └── lib/
+│   │       ├── api.ts         # Axios instance
+│   │       └── utils.ts       # formatRupiah, formatTime, dll
+│   └── package.json
+└── backend/
+    ├── main.py
+    ├── routes/
+    │   ├── menu.py
+    │   ├── orders.py
+    │   ├── tables.py
+    │   └── health.py
+    ├── models/
+    ├── schemas/
+    └── requirements.txt
 ```
 
-## 📦 Tech Stack
+---
 
-### Frontend (`/frontend`)
-- React 18 + TypeScript + Vite
-- Tailwind CSS v4 + shadcn/ui
-- Framer Motion (animations)
-- Supabase JS (Realtime)
-- React Router (routing)
+## 🚀 Cara Menjalankan Lokal
 
-### Backend (`/backend`)
-- FastAPI (Python)
-- Supabase (PostgreSQL + Realtime)
-- python-escpos (thermal printer)
-- Midtrans/Xendit (payment gateway — to be integrated)
+### Prerequisites
+- Node.js 18+
+- Python 3.11+
+- Akun Supabase
 
-## 🚀 Quick Start
-
-### 1. Backend Setup
-
+### 1. Clone Repository
 ```bash
-cd backend
+git clone https://github.com/RickyRudiansyah/warkop-qr-ordering.git
+cd warkop-qr-ordering
+```
+
+### 2. Setup Backend
+```bash
+# Buat virtual environment
 python -m venv venv
 venv\Scripts\activate  # Windows
-pip install -r requirements.txt
+# source venv/bin/activate  # Mac/Linux
 
-# Configure .env
-cp .env.example .env
-# Edit .env with Supabase credentials
+# Install dependencies
+pip install -r backend/requirements.txt
 
-# Run server
-uvicorn main:app --reload --port 8000
+# Buat file .env di folder backend/
+cp backend/.env.example backend/.env
+# Isi SUPABASE_URL dan SUPABASE_KEY di .env
+
+# Jalankan backend
+uvicorn backend.main:app --reload --port 8000
 ```
 
-Backend runs at `http://localhost:8000`
-
-### 2. Frontend Setup
-
+### 3. Setup Frontend
 ```bash
 cd frontend
 npm install
 
-# Configure .env
+# Buat file .env
 cp .env.example .env
-# Edit .env with API URL and Supabase credentials
+# Isi VITE_API_URL=http://localhost:8000/api
 
-# Run dev server
+# Jalankan frontend
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5173`
+### 4. Buka di Browser
 
-### 3. Database Setup
-
-Run the SQL schema in Supabase SQL Editor (see `backend/schema.sql` if available, or create tables manually):
-
-**Tables needed:**
-- `tables` — Table numbers and labels
-- `categories` — Menu categories
-- `menu_items` — Menu with prices, images, sold-out status
-- `menu_variations` — Size, spice level, toppings
-- `orders` — Order records
-- `order_items` — Items per order
-
-Enable Realtime on `menu_items` and `orders` tables in Supabase dashboard.
-
-## 🎨 Design System
-
-**Colors:**
-- Primary: Teal (`#0d9488`)
-- Accent: Yellow (`#facc15`)
-- Surface: Dark slate (`#0f172a`)
-
-**Typography:** Plus Jakarta Sans
-
-**Vibe:** Vibrant, youthful, energetic — targeting remaja/anak sekolah demographic.
-
-## 📱 Features
-
-### MVP (Implemented)
-- ✅ QR per meja → customer menu page
-- ✅ Menu browsing with categories, search, sold-out toggle
-- ✅ Cart with variations (size, spice, toppings)
-- ✅ Checkout with QRIS / Transfer BCA / Cash
-- ✅ Cashier dashboard: live order board, cash confirmation
-- ✅ Kitchen display: ticket cards, status updates
-- ✅ Owner dashboard: menu management, sold-out toggle
-- ✅ Manual order input (cashier fallback)
-- ✅ Realtime updates (Supabase)
-- ✅ PWA support (Add to Home Screen)
-
-### Phase 2 (Planned)
-- [ ] Split bill
-- [ ] Merge meja
-- [ ] Sales reports (daily, weekly, monthly)
-- [ ] Stock management with auto-alert
-- [ ] Customer loyalty accounts
-
-## 🔐 Staff Login (Demo)
-
-For demo purposes, login uses mock auth:
-- Username: `owner` → Owner dashboard
-- Username: `cashier` → Cashier dashboard
-- Username: `koki` → Kitchen display
-- Password: any value
-
-Replace with real auth in production (e.g., Supabase Auth or JWT).
-
-## 📄 API Endpoints
-
-### Menu
-- `GET /api/menu` — All available menu items
-- `GET /api/menu/categories` — All categories
-- `PATCH /api/menu/:id/sold-out` — Toggle sold-out status
-
-### Orders
-- `POST /api/orders` — Create new order
-- `GET /api/orders/active` — Get active orders
-- `PATCH /api/orders/:id/confirm-cash` — Confirm cash payment
-- `PATCH /api/orders/:id/status` — Update order status
-
-### Tables
-- `GET /api/tables` — All active tables
-- `GET /api/tables/:number` — Get specific table
-
-## 🖨️ Thermal Printer Setup
-
-Kitchen printer integration uses ESC/POS protocol. Configure printer IP/port in backend `.env`:
-
-```env
-PRINTER_IP=192.168.1.100
-PRINTER_PORT=9100
-```
-
-Use `python-escpos` library to send print jobs when order status changes to `CONFIRMED`.
-
-## 🌐 Deployment
-
-### Frontend
-Deploy to Vercel/Netlify:
-```bash
-cd frontend
-npm run build
-# Upload dist/ folder or connect Git repo
-```
-
-### Backend
-Deploy to Railway/Render/Fly.io:
-```bash
-cd backend
-# Add Procfile or railway.toml
-# Set environment variables in platform dashboard
-```
-
-### Database
-Use Supabase hosted PostgreSQL (already configured).
-
-## 📊 Database Schema
-
-```sql
--- Tables
-CREATE TABLE tables (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  table_number INT UNIQUE NOT NULL,
-  label TEXT,
-  is_active BOOLEAN DEFAULT true
-);
-
--- Categories
-CREATE TABLE categories (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  sort_order INT DEFAULT 0
-);
-
--- Menu Items
-CREATE TABLE menu_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  description TEXT,
-  price INT NOT NULL,
-  image_url TEXT,
-  category_id UUID REFERENCES categories(id),
-  is_available BOOLEAN DEFAULT true,
-  is_sold_out BOOLEAN DEFAULT false,
-  sort_order INT DEFAULT 0
-);
-
--- Menu Variations
-CREATE TABLE menu_variations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  menu_item_id UUID REFERENCES menu_items(id) ON DELETE CASCADE,
-  type TEXT NOT NULL, -- 'size', 'spice', 'topping'
-  name TEXT NOT NULL,
-  price_modifier INT DEFAULT 0
-);
-
--- Orders
-CREATE TABLE orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  table_id UUID REFERENCES tables(id),
-  status TEXT NOT NULL, -- 'PENDING_CASH', 'CONFIRMED', 'PROCESSING', 'SERVED', 'CANCELLED'
-  payment_method TEXT NOT NULL, -- 'CASH', 'QRIS', 'TRANSFER_BCA'
-  total_amount INT NOT NULL,
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  confirmed_at TIMESTAMPTZ
-);
-
--- Order Items
-CREATE TABLE order_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
-  menu_item_id UUID,
-  menu_item_name TEXT NOT NULL,
-  menu_item_price INT NOT NULL,
-  quantity INT NOT NULL,
-  variations JSONB DEFAULT '[]',
-  subtotal INT NOT NULL,
-  notes TEXT
-);
-```
-
-Enable Realtime:
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE menu_items;
-ALTER PUBLICATION supabase_realtime ADD TABLE orders;
-```
-
-## 🤝 Contributing
-
-1. Fork the repo
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
-
-## 📝 License
-
-MIT
-
-## 🙏 Acknowledgments
-
-- Design inspiration: 21st.dev
-- UI primitives: shadcn/ui
-- Icons: Lucide React
-- Fonts: Plus Jakarta Sans (Google Fonts)
+| URL | Halaman |
+|---|---|
+| `http://localhost:5173/order?table=1` | Menu Customer |
+| `http://localhost:5173/login` | Login Staff |
+| `http://localhost:5173/dashboard/cashier` | Dashboard Kasir |
+| `http://localhost:5173/dashboard/kitchen` | Kitchen Display |
+| `http://localhost:5173/dashboard/qr` | QR Generator |
+| `http://localhost:8000/docs` | Swagger API Docs |
 
 ---
 
-**Built with ❤️ for warkop owners and their customers**
+## 🔐 Demo Login
+
+| Username | Password | Role | Akses |
+|---|---|---|---|
+| `cashier` | apa saja | Kasir | Dashboard Kasir, QR Generator |
+| `koki` | apa saja | Koki | Kitchen Display |
+| `owner` | apa saja | Owner | Semua halaman |
+
+---
+
+## 🗄️ Database Schema (Supabase)
+
+```sql
+-- Tabel utama
+tables          -- Data meja (id, table_number, label, is_active)
+menu_categories -- Kategori menu
+menu_items      -- Item menu + variasi
+menu_variations -- Variasi item (size, spicy_level, topping)
+orders          -- Order dari customer
+order_items     -- Detail item per order
+```
+
+---
+
+## 📡 API Endpoints
+
+### Menu
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| GET | `/api/menu` | Ambil semua menu |
+| GET | `/api/menu/categories` | Ambil semua kategori |
+| POST | `/api/menu` | Tambah menu baru |
+| PUT | `/api/menu/{id}` | Update menu |
+| PATCH | `/api/menu/{id}/sold-out` | Toggle sold out |
+
+### Orders
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| POST | `/api/orders` | Buat order baru |
+| GET | `/api/orders/active` | Ambil order aktif |
+| PATCH | `/api/orders/{id}/status` | Update status order |
+| PATCH | `/api/orders/{id}/cancel` | Cancel order |
+
+### Tables
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| GET | `/api/tables` | Ambil semua meja |
+| GET | `/api/tables/{table_number}` | Ambil meja by nomor |
+
+---
+
+## 🔄 Alur Pemesanan
+
+```
+Customer scan QR
+      ↓
+Buka MenuPage (/order?table=1)
+      ↓
+Pilih menu + variasi → Cart
+      ↓
+Checkout → Pilih payment method
+      ↓
+Submit Order → Backend → Supabase
+      ↓
+CashierDashboard (realtime update)
+      ↓
+Kasir konfirmasi → CONFIRMED
+      ↓
+KitchenDisplay → Dapur proses
+      ↓
+PROCESSING → SERVED ✅
+```
+
+---
+
+## 🚢 Deployment
+
+### Frontend (Vercel)
+```bash
+cd frontend
+npm run build
+# Upload ke Vercel atau connect GitHub repo
+# Set env: VITE_API_URL=https://your-backend.railway.app/api
+```
+
+### Backend (Railway)
+```bash
+# Connect GitHub repo ke Railway
+# Set environment variables:
+# SUPABASE_URL=...
+# SUPABASE_KEY=...
+# Start command: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+```
+
+---
+
+## 👨‍💻 Developer
+
+**Ricky Rudiansyah** — BINUS University, Research Track AI & Robotika
+
+---
+
+## 📄 License
+
+MIT License — bebas digunakan dan dimodifikasi.

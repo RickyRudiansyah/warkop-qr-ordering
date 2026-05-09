@@ -6,6 +6,7 @@
 ![Backend](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi)
 ![Database](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square&logo=supabase)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=flat-square&logo=typescript)
+![Auth](https://img.shields.io/badge/Auth-Supabase%20Auth-3ECF8E?style=flat-square&logo=supabase)
 
 ---
 
@@ -24,17 +25,21 @@
 - Konfirmasi pembayaran cash
 - Update status order: Dikonfirmasi → Diproses → Selesai
 - Cancel order dengan alasan
+- Input order manual (untuk pelanggan yang tidak scan QR)
 - Generator QR Code per meja (download PNG / print)
 
 ### 👨‍🍳 Dapur (Kitchen Display)
 - Tampilan ticket pesanan real-time
 - Timer warna per order (kuning > 15 mnt, merah > 25 mnt)
 - Tombol **Mulai Proses** dan **Sudah Diantar**
-- Animasi ticket masuk/keluar (framer-motion)
+- Animasi ticket masuk/keluar
 
 ### 👑 Owner
 - Manajemen menu (tambah, edit, toggle sold out)
 - Statistik menu (total, tersedia, habis)
+- **Rekap penjualan** — filter hari ini / 7 hari / semua
+- Top menu terlaris + recent orders
+- Statistik pendapatan, rata-rata order, order dibatalkan
 
 ---
 
@@ -45,7 +50,7 @@
 | Frontend | React 18, Vite, TypeScript, Tailwind CSS |
 | Backend | FastAPI, Python 3.11 |
 | Database | Supabase (PostgreSQL + Realtime) |
-| Auth | Mock Auth (JWT-ready) |
+| Auth | **Supabase Auth** + Row Level Security |
 | Animation | Framer Motion |
 | QR Code | qrcode.react |
 | Deployment | Vercel (frontend), Railway (backend) |
@@ -75,22 +80,24 @@ warkop-qr-ordering/
 │   │   │   ├── LoginPage.tsx
 │   │   │   ├── CashierDashboard.tsx
 │   │   │   ├── KitchenDisplay.tsx
+│   │   │   ├── ManualOrderPage.tsx
 │   │   │   ├── OwnerDashboard.tsx
 │   │   │   └── QRGeneratorPage.tsx
 │   │   ├── types/index.ts
 │   │   └── lib/
 │   │       ├── api.ts         # Axios instance
+│   │       ├── supabase.ts    # Supabase client
 │   │       └── utils.ts       # formatRupiah, formatTime, dll
 │   └── package.json
 └── backend/
     ├── main.py
+    ├── database.py
     ├── routes/
     │   ├── menu.py
     │   ├── orders.py
     │   ├── tables.py
     │   └── health.py
-    ├── models/
-    ├── schemas/
+    ├── Procfile               # Railway start command
     └── requirements.txt
 ```
 
@@ -109,7 +116,37 @@ git clone https://github.com/RickyRudiansyah/warkop-qr-ordering.git
 cd warkop-qr-ordering
 ```
 
-### 2. Setup Backend
+### 2. Setup Supabase
+
+Jalankan SQL berikut di Supabase SQL Editor:
+
+```sql
+-- Table staff untuk role-based auth
+CREATE TABLE IF NOT EXISTS staff_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('cashier', 'koki', 'owner')),
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS Policy
+ALTER TABLE staff_users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Staff can read own data"
+  ON staff_users FOR SELECT TO authenticated
+  USING (email = auth.email());
+
+-- Insert staff awal
+INSERT INTO staff_users (email, name, role) VALUES
+  ('owner@warkop.com', 'Owner', 'owner'),
+  ('cashier@warkop.com', 'Kasir 1', 'cashier'),
+  ('koki@warkop.com', 'Koki 1', 'koki');
+```
+
+Lalu buat akun di **Supabase → Authentication → Users** dengan email yang sama.
+
+### 3. Setup Backend
 ```bash
 # Buat virtual environment
 python -m venv venv
@@ -120,27 +157,30 @@ venv\Scripts\activate  # Windows
 pip install -r backend/requirements.txt
 
 # Buat file .env di folder backend/
-cp backend/.env.example backend/.env
-# Isi SUPABASE_URL dan SUPABASE_KEY di .env
+# Isi:
+# SUPABASE_URL=https://xxxx.supabase.co
+# SUPABASE_KEY=your_service_role_key
 
 # Jalankan backend
 uvicorn backend.main:app --reload --port 8000
 ```
 
-### 3. Setup Frontend
+### 4. Setup Frontend
 ```bash
 cd frontend
 npm install
 
 # Buat file .env
-cp .env.example .env
-# Isi VITE_API_URL=http://localhost:8000/api
+# Isi:
+# VITE_API_URL=http://localhost:8000/api
+# VITE_SUPABASE_URL=https://xxxx.supabase.co
+# VITE_SUPABASE_ANON_KEY=your_anon_key
 
 # Jalankan frontend
 npm run dev
 ```
 
-### 4. Buka di Browser
+### 5. Buka di Browser
 
 | URL | Halaman |
 |---|---|
@@ -148,18 +188,21 @@ npm run dev
 | `http://localhost:5173/login` | Login Staff |
 | `http://localhost:5173/dashboard/cashier` | Dashboard Kasir |
 | `http://localhost:5173/dashboard/kitchen` | Kitchen Display |
+| `http://localhost:5173/dashboard/owner` | Owner Dashboard |
 | `http://localhost:5173/dashboard/qr` | QR Generator |
 | `http://localhost:8000/docs` | Swagger API Docs |
 
 ---
 
-## 🔐 Demo Login
+## 🔐 Login Staff
 
-| Username | Password | Role | Akses |
-|---|---|---|---|
-| `cashier` | apa saja | Kasir | Dashboard Kasir, QR Generator |
-| `koki` | apa saja | Koki | Kitchen Display |
-| `owner` | apa saja | Owner | Semua halaman |
+| Email | Role | Akses |
+|---|---|---|
+| `owner@warkop.com` | Owner | Semua halaman |
+| `cashier@warkop.com` | Kasir | Dashboard Kasir, Manual Order, QR Generator |
+| `koki@warkop.com` | Koki | Kitchen Display |
+
+> Password dikonfigurasi saat membuat user di Supabase Auth Dashboard.
 
 ---
 
@@ -173,6 +216,8 @@ menu_items      -- Item menu + variasi
 menu_variations -- Variasi item (size, spicy_level, topping)
 orders          -- Order dari customer
 order_items     -- Detail item per order
+staff_users     -- Data staff + role untuk auth
+activity_logs   -- Log aktivitas kasir (cancel, dll)
 ```
 
 ---
@@ -193,6 +238,9 @@ order_items     -- Detail item per order
 |---|---|---|
 | POST | `/api/orders` | Buat order baru |
 | GET | `/api/orders/active` | Ambil order aktif |
+| GET | `/api/orders/history` | Ambil histori order (rekap) |
+| GET | `/api/orders/{id}` | Detail order |
+| PATCH | `/api/orders/{id}/confirm-cash` | Konfirmasi bayar cash |
 | PATCH | `/api/orders/{id}/status` | Update status order |
 | PATCH | `/api/orders/{id}/cancel` | Cancel order |
 
@@ -230,22 +278,29 @@ PROCESSING → SERVED ✅
 
 ## 🚢 Deployment
 
-### Frontend (Vercel)
-```bash
-cd frontend
-npm run build
-# Upload ke Vercel atau connect GitHub repo
-# Set env: VITE_API_URL=https://your-backend.railway.app/api
-```
+### Backend → Railway
+1. Connect repo ke [Railway](https://railway.app)
+2. Set **Root Directory**: `backend`
+3. Set environment variables:
+   ```
+   SUPABASE_URL=https://xxxx.supabase.co
+   SUPABASE_KEY=your_service_role_key
+   ```
+4. Start command otomatis dari `Procfile`:
+   ```
+   web: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+   ```
 
-### Backend (Railway)
-```bash
-# Connect GitHub repo ke Railway
-# Set environment variables:
-# SUPABASE_URL=...
-# SUPABASE_KEY=...
-# Start command: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
-```
+### Frontend → Vercel
+1. Connect repo ke [Vercel](https://vercel.com)
+2. Set **Root Directory**: `frontend`
+3. Set environment variables:
+   ```
+   VITE_API_URL=https://your-backend.up.railway.app/api
+   VITE_SUPABASE_URL=https://xxxx.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_anon_key
+   ```
+4. File `public/vercel.json` sudah tersedia untuk SPA routing.
 
 ---
 

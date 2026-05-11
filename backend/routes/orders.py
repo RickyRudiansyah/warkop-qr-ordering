@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from backend.database import supabase
+from database import supabase
 from datetime import datetime
 
 

@@ -15,6 +15,7 @@ from backend.routes.menu import router as menu_router
 from backend.routes.orders import router as orders_router
 from backend.routes.tables import router as tables_router
 from backend.routes.logs import router as logs_router
+from database import supabase
 
 
 

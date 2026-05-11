@@ -10,11 +10,15 @@ env_path = Path(__file__).parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 # baru import routes (setelah load_dotenv)
-from backend.routes.health import router as health_router
-from backend.routes.menu import router as menu_router
-from backend.routes.orders import router as orders_router
-from backend.routes.tables import router as tables_router
-from backend.routes.logs import router as logs_router
+# from backend.routes.health import router as health_router
+# from backend.routes.menu import router as menu_router
+# from backend.routes.orders import router as orders_router
+# from backend.routes.tables import router as tables_router
+# from backend.routes.logs import router as logs_router
+from routes.health import router as health_router
+from routes.menu import router as menu_router
+from routes.orders import router as orders_router
+from routes.tables import router as tables_router
 from database import supabase
 
 
